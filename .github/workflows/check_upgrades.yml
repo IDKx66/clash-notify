@@ -40,7 +40,6 @@ jobs:
         run: node scripts/check_upgrades.js
 
       - name: Commit notified_items.json
-        # 测试模式不提交
         if: ${{ !inputs.test_mode }}
         run: |
           git config user.name "Clash Bot"
@@ -50,6 +49,7 @@ jobs:
             echo "No changes to notified_items.json"
           else
             git commit -m "Update notified items [skip ci]"
-            git push
-            echo "Pushed notified_items.json update"
+            # 先拉取避免冲突，失败不阻断流程
+            git pull --rebase origin main 2>/dev/null || true
+            git push origin main 2>/dev/null || echo "Push failed (conflict), will retry next run"
           fi
