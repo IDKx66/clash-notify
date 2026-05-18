@@ -1,0 +1,52 @@
+name: Check Clash Upgrades
+
+on:
+  schedule:
+    # 每5分钟检查一次（GitHub Actions 使用 UTC 时间）
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: '通知方式'
+        required: false
+        default: 'ntfy'
+        type: choice
+        options:
+          - ntfy
+          - bark
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run upgrade check
+        env:
+          NOTIFY_PROVIDER: ${{ secrets.NOTIFY_PROVIDER || 'ntfy' }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ secrets.NTFY_SERVER || 'https://ntfy.sh' }}
+          BARK_KEY: ${{ secrets.BARK_KEY }}
+        run: node scripts/check_upgrades.js
+
+      - name: Commit notified_items.json
+        run: |
+          git config user.name "Clash Bot"
+          git config user.email "clash-bot@users.noreply.github.com"
+          git add notified_items.json
+          if git diff --staged --quiet; then
+            echo "No changes to notified_items.json"
+          else
+            git commit -m "Update notified items [skip ci]"
+            git push
+            echo "Pushed notified_items.json update"
+          fi

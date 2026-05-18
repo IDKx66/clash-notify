@@ -1,0 +1,20 @@
+{
+  "#PUT_YOUR_TAG_HERE": {
+    "timestamp": 1700000000,
+    "tag": "#YOUR_TAG",
+    "buildings": [],
+    "heroes": [],
+    "units": [],
+    "spells": [],
+    "siege_machines": [],
+    "pets": [],
+    "traps": [],
+    "guardians": [],
+    "buildings2": [],
+    "heroes2": [],
+    "units2": [],
+    "traps2": [],
+    "boosts": {},
+    "helpers": []
+  }
+}
