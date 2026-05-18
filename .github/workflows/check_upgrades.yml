@@ -6,17 +6,17 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
-      provider:
-        description: '通知方式'
+      test_mode:
+        description: '发送测试通知（会跳过正常检查）'
         required: false
-        default: 'ntfy'
-        type: choice
-        options:
-          - ntfy
-          - bark
+        default: false
+        type: boolean
 
 permissions:
   contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   check:
@@ -36,9 +36,12 @@ jobs:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_SERVER: ${{ secrets.NTFY_SERVER || 'https://ntfy.sh' }}
           BARK_KEY: ${{ secrets.BARK_KEY }}
+          TEST_MODE: ${{ inputs.test_mode || false }}
         run: node scripts/check_upgrades.js
 
       - name: Commit notified_items.json
+        # 测试模式不提交
+        if: ${{ !inputs.test_mode }}
         run: |
           git config user.name "Clash Bot"
           git config user.email "clash-bot@users.noreply.github.com"

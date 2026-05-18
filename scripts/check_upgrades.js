@@ -373,6 +373,39 @@ async function main() {
     console.log(`=== 升级检查 ${new Date().toISOString()} ===`);
     console.log(`通知方式: ${PROVIDER}`);
 
+    // 测试模式：仅发送测试通知，不检查升级
+    if (process.env.TEST_MODE === 'true') {
+        console.log('--- 测试模式 ---');
+        if (PROVIDER === 'bark') {
+            if (!BARK_KEY) { console.log('BARK_KEY 未配置，无法发送测试通知'); return; }
+            const title = encodeURIComponent('\u{1F9EA} 测试通知');
+            const body = encodeURIComponent('Bark 通知配置成功！升级完成时你将收到类似推送。');
+            try {
+                const resp = await fetch(`https://api.day.app/${encodeURIComponent(BARK_KEY)}/${title}/${body}?isArchive=1`);
+                console.log(resp.ok ? '测试通知已发送，请检查手机 Bark App' : `发送失败 HTTP ${resp.status}`);
+            } catch(e) { console.error('发送异常:', e.message); }
+        } else {
+            if (!NTFY_TOPIC) { console.log('NTFY_TOPIC 未配置，无法发送测试通知'); return; }
+            const server = NTFY_SERVER.replace(/\/$/, '');
+            try {
+                const resp = await fetch(`${server}/${encodeURIComponent(NTFY_TOPIC)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        topic: NTFY_TOPIC,
+                        title: '\u{1F9EA} 测试通知',
+                        message: '如果你看到这条消息，说明 ntfy.sh 通知配置成功！升级完成时你将收到类似推送。',
+                        priority: 4,
+                        tags: ['white_check_mark']
+                    })
+                });
+                console.log(resp.ok ? '测试通知已发送，请检查手机 ntfy App' : `发送失败 HTTP ${resp.status}`);
+            } catch(e) { console.error('发送异常:', e.message); }
+        }
+        console.log('=== 测试完成 ===');
+        return;
+    }
+
     const accounts = loadGameData();
     const tags = Object.keys(accounts);
     if (tags.length === 0) {
