@@ -6,6 +6,10 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
+      game_data:
+        description: '从游戏复制的 JSON 数据（粘贴到这里即可更新游戏数据）'
+        required: false
+        type: string
       test_mode:
         description: '发送测试通知（会跳过正常检查）'
         required: false
@@ -30,6 +34,13 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Update game_data.json
+        if: ${{ inputs.game_data != '' }}
+        run: |
+          cat << 'GAMEDATA_EOF' > game_data.json
+          ${{ inputs.game_data }}
+          GAMEDATA_EOF
+
       - name: Run upgrade check
         env:
           NOTIFY_PROVIDER: ${{ secrets.NOTIFY_PROVIDER || 'ntfy' }}
@@ -39,17 +50,16 @@ jobs:
           TEST_MODE: ${{ inputs.test_mode || false }}
         run: node scripts/check_upgrades.js
 
-      - name: Commit notified_items.json
+      - name: Commit changes
         if: ${{ !inputs.test_mode }}
         run: |
           git config user.name "Clash Bot"
           git config user.email "clash-bot@users.noreply.github.com"
-          git add notified_items.json
+          git add notified_items.json game_data.json
           if git diff --staged --quiet; then
-            echo "No changes to notified_items.json"
+            echo "No changes to commit"
           else
-            git commit -m "Update notified items [skip ci]"
-            # 先拉取避免冲突，失败不阻断流程
+            git commit -m "Update game data [skip ci]"
             git pull --rebase origin main 2>/dev/null || true
             git push origin main 2>/dev/null || echo "Push failed (conflict), will retry next run"
           fi
